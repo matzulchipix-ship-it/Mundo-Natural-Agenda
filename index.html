@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mundo Natural - Wellness Center </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+    <style>
+        /* ================= ESTILOS GLOBALES SPA ================= */
+        :root {
+            --primary: #2d5a27;
+            --dark: #333;
+            --light: #f4f6f9;
+            --border: #ccd1d9;
+            --danger: #d9534f;
+        }
+        body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-color: var(--light); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .view-section { display: none; height: 100%; flex-direction: column; overflow: hidden; }
+        .view-section.active { display: flex; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+
+        /* ================= ESTILOS AGENDA ================= */
+        .sticky-col { position: sticky; left: 0; background-color: #f8fafc; z-index: 10; }
+        .sticky-header { position: sticky; top: 0; background-color: white; z-index: 20; }
+        .sticky-corner { position: sticky; top: 0; left: 0; background-color: #f1f5f9; z-index: 30; }
+        .agenda-grid { display: grid; grid-auto-rows: 60px; }
+
+        /* ================= ESTILOS TICKETS ================= */
+        .admin-panel { width: 55%; padding: 20px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; border-right: 2px solid var(--border); }
+        .preview-panel { width: 45%; background: #e0e0e0; display: flex; justify-content: center; align-items: flex-start; padding: 20px; overflow-y: auto; }
+        .ticket-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group.full-width { grid-column: span 2; }
+        .form-row-inline { display: flex; gap: 10px; align-items: center; }
+        .form-row-inline input[type="number"], .form-row-inline input[type="text"] { flex-grow: 1; }
+        .service-checkbox { width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary); }
+        .ticket-input { padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 15px; background: white; }
+        .ticket-input:disabled { background: #e9ecef; color: #6c757d; }
+        .ticket-input:focus { outline: none; border-color: var(--primary); }
+        .btn-ticket { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.2s; }
+        .btn-ticket:hover { background: #1e3d1a; }
+        
+        .history-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        .btn-tab { background: #e0e0e0; color: var(--dark); padding: 8px 15px; font-size: 14px; border:none; cursor:pointer; font-weight: bold;}
+        .btn-tab.active { background: var(--primary); color: white; }
+        .history-table-container { max-height: 250px; overflow-y: auto; }
+        .hist-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .hist-table th, .hist-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        .hist-table th { background: #f8f9fa; position: sticky; top: 0; }
+        .actions-cell { display: flex; gap: 5px; }
+        .btn-print-sm { background: #0275d8; color:white; border:none; padding: 5px 10px; font-size: 12px; border-radius: 3px; cursor:pointer; font-weight: bold;}
+        .btn-void-sm { background: var(--danger); color:white; border:none; padding: 5px 10px; font-size: 12px; border-radius: 3px; cursor:pointer; font-weight: bold;}
+        .row-anulado { text-decoration: line-through; color: #aaa; }
+
+        /* ESTILO DEL TICKET (80mm ESTRICTO PARA POS) */
+        .ticket-container { width: 74mm; background: white; padding: 5mm 3mm; box-shadow: 0 0 10px rgba(0,0,0,0.1); color: #000; font-family: 'Courier New', Courier, monospace; font-size: 12px; line-height: 1.3; box-sizing: border-box; margin: 0 auto; }
+        .ticket-header { text-align: center; margin-bottom: 10px; }
+        .ticket-title { font-size: 18px; font-weight: bold; letter-spacing: 1px; margin-bottom: 2px; }
+        .ticket-subtitle { border: 1.5px solid #000; border-radius: 12px; display: inline-block; padding: 2px 12px; font-size: 11px; font-weight: bold; margin-top: 4px; }
+        .ticket-row { display: flex; margin-bottom: 8px; align-items: flex-end; }
+        .ticket-label { white-space: nowrap; font-weight: bold; }
+        .ticket-value-line { border-bottom: 1px solid #000; flex-grow: 1; margin-left: 5px; display: flex; justify-content: center; align-items: flex-end; min-height: 18px; font-weight: bold; font-size: 12px; overflow: hidden; }
+        .fecha-container { display: flex; justify-content: center; align-items: flex-end; width: 100%; }
+        .fecha-segmento { border-bottom: 1px solid #000; display: inline-flex; justify-content: center; font-weight: bold; min-height: 18px; }
+        .services-section { margin: 12px 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 8px 0; }
+        .service-item { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px; }
+        .service-check-box { font-weight: bold; font-size: 13px; margin-right: 4px; white-space: nowrap; }
+        .service-name { flex-shrink: 0; font-size: 12px; }
+        .service-dots { border-bottom: 1px dashed #444; flex-grow: 1; margin: 0 4px; margin-bottom: 3px; }
+        .service-price { white-space: nowrap; display: flex; align-items: flex-end; }
+        .price-line { border-bottom: 1px solid #000; width: 80px; display: inline-flex; justify-content: center; font-weight: bold; min-height: 16px; font-size: 12px; }
+        .masaje-tiempo-line { border-bottom: 1px solid #000; width: 55px; display: inline-flex; justify-content: center; font-weight: bold; margin-right: 4px; min-height: 16px; font-size: 11px; }
+        .ticket-footer { margin-top: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .ticket-number { color: var(--danger); font-weight: bold; font-size: 15px; }
+        .footer-signatures { flex-grow: 1; margin-left: 10px; }
+
+        /* REGLAS DE IMPRESIÓN TÉRMICA ESTRICTAS */
+        @media print {
+            body * { visibility: hidden; }
+            #view-tickets.active, #view-tickets.active .preview-panel, #view-tickets.active .ticket-container, #view-tickets.active .ticket-container * { visibility: visible; }
+            .preview-panel { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; background: white; display: block; }
+            .ticket-container { box-shadow: none; width: 74mm !important; max-width: 74mm !important; margin: 0 auto !important; padding: 0 !important; border: none; }
+            .admin-panel, nav, header { display: none !important; }
+            .ticket-number { color: #000 !important; }
+            @page { size: 80mm auto; margin: 0mm; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="bg-green-800 text-white p-4 shadow-md flex justify-between items-center shrink-0">
+        <h1 class="text-xl font-bold tracking-wide">Mundo Natural - Administración</h1>
+        <div class="flex gap-2">
+            <button onclick="showAppView('dashboard')" class="px-4 py-2 hover:bg-green-700 rounded font-semibold transition-colors text-sm uppercase">Dashboard</button>
+            <button onclick="showAppView('agenda')" class="px-4 py-2 hover:bg-green-700 rounded font-semibold transition-colors text-sm uppercase">Agenda</button>
+            <button onclick="showAppView('tickets')" class="px-4 py-2 hover:bg-green-700 rounded font-semibold transition-colors text-sm uppercase">Tickets</button>
+        </div>
+    </nav>
+
+    <main class="flex-1 overflow-hidden relative">
+
+        <section id="view-dashboard" class="view-section active p-6 overflow-auto">
+            <div class="bg-gradient-to-r from-green-800 to-green-900 text-white rounded-xl p-8 mb-8 shadow-lg text-center border-b-4 border-green-600">
+                <h2 class="text-3xl font-extrabold mb-2">Bienvenido a Mundo Natural</h2>
+                <p class="text-green-100 mb-6 font-medium text-lg">Wellness Center</p>
+                <div class="flex justify-center gap-4">
+                    <button onclick="showAppView('agenda')" class="bg-white text-green-900 font-bold px-8 py-3 rounded-lg shadow hover:bg-green-50 transition-transform transform hover:-translate-y-0.5 text-base">Ir a la Agenda</button>
+                    <button onclick="showAppView('tickets')" class="bg-green-700 text-white border-2 border-green-500 font-bold px-8 py-3 rounded-lg shadow hover:bg-green-600 transition-transform transform hover:-translate-y-0.5 text-base">Generar Ticket</button>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-700 mb-4 border-b pb-2 flex items-center gap-2">
+                Resumen Operativo del Día
+                <span id="conexion-estado" class="text-xs bg-yellow-100 text-yellow-800 font-bold px-2 py-0.5 rounded border border-yellow-300">Conectando a la nube...</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-600">
+                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider">Citas Hoy</p>
+                    <p class="text-3xl font-black text-gray-800 mt-1" id="dash-citas">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-600">
+                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider">Tickets Emitidos Hoy</p>
+                    <p class="text-3xl font-black text-gray-800 mt-1" id="dash-tickets">0</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-agenda" class="view-section bg-gray-100">
+            <header class="bg-white shadow-md border-b-2 border-gray-300 shrink-0 relative z-40">
+                <div class="p-4 flex justify-between items-center pb-0">
+                    <div>
+                        <div class="mt-2 mb-2 flex items-center gap-3 bg-green-50 p-2 rounded-lg border border-green-200 inline-flex">
+                            <label class="text-sm text-green-800 font-bold uppercase tracking-tight">Fecha de Agenda:</label>
+                            <input type="date" id="selector-fecha" onchange="cambiarFecha()" class="border-2 border-green-300 rounded-md px-3 py-1 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white shadow-sm">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex px-4 gap-2 border-t pt-2 bg-gray-50">
+                    <button onclick="cambiarTabAgenda('damas')" id="tab-damas" class="px-5 py-2 font-bold text-green-800 border-b-4 border-green-600 bg-white rounded-t-lg border-t border-l border-r border-gray-200 uppercase text-xs tracking-wider">Área Damas</button>
+                    <button onclick="cambiarTabAgenda('caballeros')" id="tab-caballeros" class="px-5 py-2 font-bold text-gray-500 hover:text-green-700 border-b-4 border-transparent uppercase text-xs tracking-wider">Área Caballeros</button>
+                    <button onclick="cambiarTabAgenda('doctor')" id="tab-doctor" class="px-5 py-2 font-bold text-gray-500 hover:text-green-700 border-b-4 border-transparent uppercase text-xs tracking-wider">Doctor</button>
+                </div>
+            </header>
+
+            <div class="bg-white px-4 py-3 border-b-2 border-gray-300 shadow-sm flex justify-between items-center shrink-0 relative z-30">
+                <div class="flex items-center gap-3">
+                    <h2 id="titulo-seccion" class="font-bold text-xl text-gray-800 tracking-tight">Agenda: Área Damas</h2>
+                    <span id="indicador-personalizado" class="hidden text-xs bg-blue-100 text-blue-800 font-bold px-2 py-1 rounded-full border border-blue-300">Colaboradores personalizados</span>
+                </div>
+                <button onclick="editarStaff()" class="text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md shadow flex items-center gap-2 font-bold transition-colors">
+                    <span>Modificar Colaboradores</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-auto p-4 relative">
+                <div class="bg-white rounded-lg shadow-lg border-2 border-gray-400 overflow-hidden w-full max-w-full relative overflow-x-auto">
+                    <div id="agenda-container" class="min-w-max"></div>
+                </div>
+            </div>
+
+            <div id="cita-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center backdrop-blur-sm">
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 border-2 border-gray-300">
+                    <h3 id="modal-titulo" class="text-xl font-extrabold text-gray-800 mb-4 border-b pb-2">Nueva Cita</h3>
+                    <input type="hidden" id="cita-id">
+                    <input type="hidden" id="cita-staffIndex">
+                    <input type="hidden" id="cita-hora">
+                    <input type="hidden" id="cita-minuto">
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Nombre del Cliente</label>
+                            <input type="text" id="cita-nombre" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 font-medium text-sm" placeholder="Nombre completo">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Teléfono</label>
+                                <input type="tel" id="cita-telefono" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 font-medium text-sm" placeholder="Opcional">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Duración</label>
+                                <select id="cita-duracion" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 font-medium bg-white text-sm">
+                                    <option value="15">15 Minutos</option>
+                                    <option value="30">30 Minutos</option>
+                                    <option value="45">45 Minutos</option>
+                                    <option value="60" selected>1 Hora</option>
+                                    <option value="90">1.5 Horas</option>
+                                    <option value="120">2 Horas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Servicio a Realizar</label>
+                            <input type="text" id="cita-servicio" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 font-medium text-sm" placeholder="Ej. Masaje Relajante">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Observaciones / Notas Clínicas</label>
+                            <textarea id="cita-observaciones" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 font-medium text-sm resize-none" rows="2" placeholder="Requerimientos especiales, condición del cliente..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-between items-center pt-4 border-t">
+                        <div class="flex gap-2">
+                            <button id="btn-eliminar" onclick="eliminarCita()" class="hidden text-red-700 hover:bg-red-100 border border-red-200 px-3 py-2 rounded-lg font-bold transition-colors text-xs uppercase tracking-wide">Eliminar</button>
+                            <button id="btn-bridge" onclick="bridgeGenerarTicket()" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg font-bold transition-colors text-xs uppercase tracking-wide shadow-md">Generar Ticket</button>
+                        </div>
+                        
+                        <div class="flex gap-2 ml-auto">
+                            <button onclick="cerrarModal()" class="px-4 py-2 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-bold transition-colors text-sm">Cancelar</button>
+                            <button onclick="guardarCita()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow-md transition-colors text-sm">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-tickets" class="view-section flex-row">
+            <div class="admin-panel h-full bg-white">
+                <div class="ticket-card border border-gray-200">
+                    <h2 class="text-xl font-bold text-green-800 mb-4 border-b-2 border-green-700 pb-2 tracking-tight">Generar Nuevo Ticket</h2>
+                    <form id="ticketForm" onsubmit="procesarTicket(event)">
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="inputNombre">Nombre del Cliente:</label>
+                                <input type="text" id="inputNombre" class="ticket-input" required oninput="actualizarPreview()">
+                            </div>
+                            
+                            <div class="form-group full-width"><label><input type="checkbox" id="checkSauna" class="service-checkbox" onchange="toggleServicio('Sauna')"> Sauna</label><div class="form-row-inline"><select id="tipoPagoSauna" class="ticket-input" disabled onchange="cambiarTipoPago('Sauna')"><option value="normal">Efectivo/Tarjeta (Q)</option><option value="prepago">Prepago</option><option value="cortesia">Cortesía</option></select><input type="number" id="inputSauna" class="ticket-input" min="0" placeholder="Monto" disabled oninput="actualizarPreview()"></div></div>
+                            <div class="form-group full-width"><label><input type="checkbox" id="checkMasaje" class="service-checkbox" onchange="toggleServicio('Masaje')"> Masaje</label><div class="form-row-inline"><select id="tipoPagoMasaje" class="ticket-input" disabled onchange="cambiarTipoPago('Masaje')"><option value="normal">Efectivo/Tarjeta (Q)</option><option value="prepago">Prepago</option><option value="cortesia">Cortesía</option></select><input type="number" id="inputMasaje" class="ticket-input" min="0" placeholder="Monto" disabled oninput="actualizarPreview()"></div></div>
+                            <div class="form-group full-width"><label for="inputMasajeTiempo">Duración del Masaje:</label><input type="text" id="inputMasajeTiempo" class="ticket-input" placeholder="Ej: 1 Hora" disabled oninput="actualizarPreview()"></div>
+                            <div class="form-group full-width"><label><input type="checkbox" id="checkQuiro" class="service-checkbox" onchange="toggleServicio('Quiro')"> Quiropráctico</label><div class="form-row-inline"><select id="tipoPagoQuiro" class="ticket-input" disabled onchange="cambiarTipoPago('Quiro')"><option value="normal">Efectivo/Tarjeta (Q)</option><option value="prepago">Prepago</option><option value="cortesia">Cortesía</option></select><input type="number" id="inputQuiro" class="ticket-input" min="0" placeholder="Monto" disabled oninput="actualizarPreview()"></div></div>
+                            <div class="form-group full-width"><label><input type="checkbox" id="checkDesinto" class="service-checkbox" onchange="toggleServicio('Desinto')"> Dren. Linfático</label><div class="form-row-inline"><select id="tipoPagoDesinto" class="ticket-input" disabled onchange="cambiarTipoPago('Desinto')"><option value="normal">Pago (Q)</option></select><input type="number" id="inputDesinto" class="ticket-input" min="0" placeholder="Monto" disabled oninput="actualizarPreview()"></div></div>
+                            <div class="form-group full-width"><label><input type="checkbox" id="checkColon" class="service-checkbox" onchange="toggleServicio('Colon')"> Colónico</label><div class="form-row-inline"><select id="tipoPagoColon" class="ticket-input" disabled onchange="cambiarTipoPago('Colon')"><option value="normal">Pago (Q)</option></select><input type="number" id="inputColon" class="ticket-input" min="0" placeholder="Monto" disabled oninput="actualizarPreview()"></div></div>
+                            <div class="form-group full-width"><label><input type="checkbox" id="checkFacial" class="service-checkbox" onchange="toggleServicio('Facial')"> Limpieza Facial</label><div class="form-row-inline"><select id="tipoPagoFacial" class="ticket-input" disabled onchange="cambiarTipoPago('Facial')"><option value="normal">Pago (Q)</option></select><input type="number" id="inputFacial" class="ticket-input" min="0" placeholder="Monto" disabled oninput="actualizarPreview()"></div></div>
+                            <div class="form-group full-width"><label><input type="checkbox" id="checkOtro" class="service-checkbox" onchange="toggleServicio('Otro')"> Otro</label><div class="form-row-inline"><select id="tipoPagoOtro" class="ticket-input" disabled onchange="cambiarTipoPago('Otro')"><option value="normal">Pago (Q)</option></select><input type="text" id="inputOtroNombre" class="ticket-input" placeholder="Nombre" disabled oninput="actualizarPreview()" style="width: 40%;"><input type="number" id="inputOtro" class="ticket-input" min="0" placeholder="Monto" disabled oninput="actualizarPreview()"></div></div>
+                            
+                            <div class="form-group"><label for="inputMasajista">Atendió:</label><input type="text" id="inputMasajista" class="ticket-input" oninput="actualizarPreview()"></div>
+                            <div class="form-group"><label for="inputHora">Hora:</label><input type="text" id="inputHora" class="ticket-input" oninput="actualizarPreview()"></div>
+                        </div>
+                        <button type="submit" class="btn-ticket w-full mt-4 uppercase tracking-wider text-sm">Guardar e Imprimir</button>
+                    </form>
+                </div>
+
+                <div class="ticket-card border border-gray-200">
+                    <h2 class="text-xl font-bold text-green-800 mb-4 border-b-2 border-green-700 pb-2 tracking-tight">Historial Operativo</h2>
+                    <div class="history-controls">
+                        <button class="btn-tab active" id="tabHoy" onclick="cambiarFiltro('hoy')">Hoy</button>
+                        <button class="btn-tab" id="tabMes" onclick="cambiarFiltro('mes')">Mes</button>
+                        <button class="btn-tab" id="tabTodos" onclick="cambiarFiltro('todos')">Todos</button>
+                    </div>
+                    <div class="history-table-container">
+                        <table class="hist-table">
+                            <thead><tr><th>No.</th><th>Fecha</th><th>Cliente</th><th>Acciones</th></tr></thead>
+                            <tbody id="tablaHistorial"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-panel h-full">
+                <div class="ticket-container" id="ticketPrintable">
+                    <div class="ticket-header">
+                        <div class="ticket-title">MUNDO NATURAL</div>
+                        <div class="ticket-subtitle">Wellness Center</div>
+                    </div>
+                    <div class="ticket-row" style="margin-top: 15px;"><span class="ticket-label">Nombre:</span><div class="ticket-value-line" id="lblNombre"></div></div>
+                    <div class="ticket-row">
+                        <span class="ticket-label">Fecha:</span>
+                        <div class="fecha-container">&nbsp;<span class="fecha-segmento" style="width: 25px;" id="fDia"></span>&nbsp;de&nbsp;<span class="fecha-segmento" style="width: 85px;" id="fMes"></span>&nbsp;de 20<span class="fecha-segmento" style="width: 25px;" id="fAnio"></span></div>
+                    </div>
+                    <div class="services-section">
+                        <div class="service-item"><span class="service-check-box" id="chkSauna">[ ]</span><span class="service-name">Sauna:</span><div class="service-dots"></div><div class="service-price"><span class="price-line" id="pSauna"></span></div></div>
+                        <div class="service-item"><span class="service-check-box" id="chkMasaje">[ ]</span><span class="service-name">Masaje:</span><div class="service-dots"></div><div class="service-price"><span class="masaje-tiempo-line" id="pMasajeTiempo"></span><span class="price-line" id="pMasaje"></span></div></div>
+                        <div class="service-item"><span class="service-check-box" id="chkQuiro">[ ]</span><span class="service-name">Quiropráctico:</span><div class="service-dots"></div><div class="service-price"><span class="price-line" id="pQuiro"></span></div></div>
+                        <div class="service-item"><span class="service-check-box" id="chkDesinto">[ ]</span><span class="service-name">Dren. Linfático:</span><div class="service-dots"></div><div class="service-price"><span class="price-line" id="pDesinto"></span></div></div>
+                        <div class="service-item"><span class="service-check-box" id="chkColon">[ ]</span><span class="service-name">Colónico:</span><div class="service-dots"></div><div class="service-price"><span class="price-line" id="pColon"></span></div></div>
+                        <div class="service-item"><span class="service-check-box" id="chkFacial">[ ]</span><span class="service-name">Limpieza Facial:</span><div class="service-dots"></div><div class="service-price"><span class="price-line" id="pFacial"></span></div></div>
+                        <div class="service-item"><span class="service-check-box" id="chkOtro">[ ]</span><span class="service-name" id="lblOtroNombre">Otro:</span><div class="service-dots"></div><div class="service-price"><span class="price-line" id="pOtro"></span></div></div>
+                    </div>
+                    <div class="ticket-footer">
+                        <div><div class="ticket-number" id="lblNumero">No. 000000</div></div>
+                        <div class="footer-signatures">
+                            <div class="ticket-row"><span class="ticket-label">Atendió:</span><div class="ticket-value-line" id="lblMasajista"></div></div>
+                            <div class="ticket-row"><span class="ticket-label">Hora:</span><div class="ticket-value-line" id="lblHora"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // ==========================================
+        // 0. CONFIGURACIÓN FIREBASE REALTIME DB
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCH8wt41kQ_08rW6X-Cnr4i5k7GHf899Vk",
+            authDomain: "mundo-natural-ed771.firebaseapp.com",
+            databaseURL: "https://mundo-natural-ed771-default-rtdb.firebaseio.com",
+            projectId: "mundo-natural-ed771",
+            storageBucket: "mundo-natural-ed771.firebasestorage.app",
+            messagingSenderId: "79637591841",
+            appId: "1:79637591841:web:218e3b93edc5c3afc2b060"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // ESTADO GLOBAL
+        let dbTickets = [];
+        let siguienteNumero = 132;
+        let filtroActual = 'hoy';
+
+        const agendaConfig = { horaInicio: 7, horaFin: 18, intervalos: ["00", "15", "30", "45"] };
+        const agendaEstado = {
+            fechaActual: new Date().toISOString().split('T')[0],
+            vistaActual: 'damas',
+            vistasTitulos: { damas: "Área Damas", caballeros: "Área Caballeros", doctor: "Consultorio Médico" },
+            staffPorDefecto: {
+                damas: ["Cabina 1", "Cabina 2", "Cabina 3", "Cabina 4"],
+                caballeros: ["Cabina 1", "Cabina 2"],
+                doctor: ["Dr. Daniel"]
+            },
+            staffPorFecha: {},
+            citas: {}
+        };
+
+        // ==========================================
+        // ESCUCHAS DE FIREBASE (SINCRONIZACIÓN)
+        // ==========================================
+        db.ref('citas').on('value', (snapshot) => {
+            agendaEstado.citas = snapshot.val() || {};
+            renderizarAgenda();
+            actualizarDashboardStats();
+            document.getElementById('conexion-estado').textContent = "En línea";
+            document.getElementById('conexion-estado').className = "text-xs bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded border border-green-300";
+        });
+
+        db.ref('tickets').on('value', (snapshot) => {
+            dbTickets = snapshot.val() || [];
+            renderHistorial();
+            actualizarDashboardStats();
+        });
+
+        db.ref('staff').on('value', (snapshot) => {
+            agendaEstado.staffPorFecha = snapshot.val() || {};
+            renderizarAgenda();
+        });
+
+        db.ref('siguienteNumero').on('value', (snapshot) => {
+            siguienteNumero = snapshot.val() || 132;
+            actualizarPreview();
+        });
+
+
+        // ==========================================
+        // FUNCIONES DE UI Y LÓGICA
+        // ==========================================
+        function showAppView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+            if(viewId === 'dashboard') actualizarDashboardStats();
+        }
+
+        function initAgenda() {
+            document.getElementById('selector-fecha').value = agendaEstado.fechaActual;
+        }
+
+        function getStaffActual() {
+            const f = agendaEstado.fechaActual; const v = agendaEstado.vistaActual;
+            if (agendaEstado.staffPorFecha[f] && agendaEstado.staffPorFecha[f][v]) {
+                document.getElementById('indicador-personalizado').classList.remove('hidden');
+                return agendaEstado.staffPorFecha[f][v];
+            } else {
+                document.getElementById('indicador-personalizado').classList.add('hidden');
+                return agendaEstado.staffPorDefecto[v];
+            }
+        }
+
+        function renderizarAgenda() {
+            const contenedor = document.getElementById('agenda-container');
+            const staffActual = getStaffActual();
+            const columnas = staffActual.length;
+            const estiloColumnas = `grid-template-columns: 100px repeat(${columnas}, minmax(200px, 1fr));`;
+            const citasActivas = Object.values(agendaEstado.citas).filter(c => c.fecha === agendaEstado.fechaActual && c.vista === agendaEstado.vistaActual);
+            
+            const slotsOcupados = {};
+            citasActivas.forEach(cita => {
+                const startRow = (cita.hora - agendaConfig.horaInicio) * 4 + (cita.minuto / 15) + 1;
+                const bloquesDuracion = cita.duracion / 15;
+                for(let i = 0; i < bloquesDuracion; i++) slotsOcupados[`${cita.staffIndex}-${startRow + i}`] = true;
+            });
+
+            let html = `<div class="sticky-header shadow-md border-b-4 border-gray-400 z-20 bg-gray-100" style="display: grid; ${estiloColumnas}">
+                <div class="p-3 text-center font-extrabold text-gray-800 border-r-2 border-gray-400 sticky-corner bg-gray-200 uppercase tracking-wide text-xs">Hora</div>`;
+            staffActual.forEach(nombre => html += `<div class="p-3 text-center font-extrabold text-green-900 border-r-2 border-gray-400 bg-green-100 uppercase tracking-wide text-xs">${nombre}</div>`);
+            html += `</div><div class="agenda-grid relative bg-white z-0" style="${estiloColumnas}">`;
+
+            for (let hora = agendaConfig.horaInicio; hora <= agendaConfig.horaFin; hora++) {
+                agendaConfig.intervalos.forEach((minutosStr, indexMin) => {
+                    const minuto = parseInt(minutosStr);
+                    const row = (hora - agendaConfig.horaInicio) * 4 + indexMin + 1;
+                    const ampm = hora >= 12 ? 'P.M.' : 'A.M.';
+                    let horaDisplay = hora > 12 ? hora - 12 : hora;
+                    if (horaDisplay === 0) horaDisplay = 12;
+
+                    let bordeInferiorHora = minuto === 45 ? 'border-b-4 border-gray-400' : 'border-b-2 border-gray-300';
+                    html += `<div class="border-r-2 border-gray-400 ${bordeInferiorHora} flex flex-col justify-center items-center bg-gray-50 sticky-col" style="grid-column: 1; grid-row: ${row};">`;
+                    if (minuto === 0) html += `<span class="text-xl font-black text-gray-800">${horaDisplay}</span><span class="text-[10px] text-gray-600 font-bold uppercase">${minutosStr} ${ampm}</span>`;
+                    else html += `<span class="text-xs text-gray-500 font-bold">${horaDisplay}:${minutosStr} ${ampm}</span>`;
+                    html += `</div>`;
+
+                    staffActual.forEach((_, colIndex) => {
+                        if (!slotsOcupados[`${colIndex}-${row}`]) {
+                            let bordeInferiorCelda = minuto === 45 ? 'border-b-4 border-gray-400' : 'border-b-2 border-gray-300';
+                            html += `<div class="border-r-2 border-gray-300 ${bordeInferiorCelda} hover:bg-green-50 cursor-pointer group flex items-center justify-center transition-colors" style="grid-column: ${colIndex + 2}; grid-row: ${row};" onclick="abrirModalNueva(${hora}, ${minuto}, ${colIndex})"><span class="text-green-600 font-black text-xl opacity-0 group-hover:opacity-100">+</span></div>`;
+                        }
+                    });
+                });
+            }
+
+            citasActivas.forEach(cita => {
+                const startRow = (cita.hora - agendaConfig.horaInicio) * 4 + (cita.minuto / 15) + 1;
+                const bloquesDuracion = cita.duracion / 15;
+                const nombreStaff = staffActual[cita.staffIndex] || "Colaborador";
+                
+                let bgColor, textColor;
+                if(cita.estadoTicket === true) {
+                    bgColor = 'bg-yellow-100 border-yellow-500'; textColor = 'text-yellow-900';
+                } else {
+                    bgColor = agendaEstado.vistaActual === 'damas' ? 'bg-pink-100 border-pink-500' : agendaEstado.vistaActual === 'caballeros' ? 'bg-blue-100 border-blue-500' : 'bg-green-100 border-green-500';
+                    textColor = agendaEstado.vistaActual === 'damas' ? 'text-pink-900' : agendaEstado.vistaActual === 'caballeros' ? 'text-blue-900' : 'text-green-900';
+                }
+
+                const obsTexto = cita.observaciones ? `<p class="text-[10px] font-medium ${textColor} italic opacity-90 truncate mt-0.5">Obs: ${cita.observaciones}</p>` : '';
+
+                html += `<div class="p-1 z-10" style="grid-column: ${cita.staffIndex + 2}; grid-row: ${startRow} / span ${bloquesDuracion};">
+                    <div onclick="abrirModalEdicion('${cita.id}')" class="w-full h-full border-2 rounded-md p-2 shadow-md ${bgColor} cursor-pointer hover:shadow-lg flex flex-col overflow-hidden transition-all">
+                        <div class="bg-white bg-opacity-60 rounded px-1 py-0.5 mb-1 inline-block w-max border border-gray-200">
+                            <span class="text-[10px] font-black ${textColor} uppercase tracking-tight flex items-center gap-1">${nombreStaff}</span>
+                        </div>
+                        <p class="text-sm font-black ${textColor} leading-tight truncate">${cita.nombre}</p>
+                        <p class="text-xs ${textColor} font-bold leading-tight mt-0.5 truncate">${cita.duracion} min | ${cita.servicio}</p>
+                        ${obsTexto}
+                        ${cita.telefono ? `<p class="text-[10px] ${textColor} font-semibold mt-auto opacity-80">Tel: ${cita.telefono}</p>` : ''}
+                    </div></div>`;
+            });
+            html += `</div>`;
+            contenedor.innerHTML = html;
+        }
+
+        function cambiarFecha() { agendaEstado.fechaActual = document.getElementById('selector-fecha').value; renderizarAgenda(); actualizarDashboardStats(); }
+        function cambiarTabAgenda(vista) {
+            agendaEstado.vistaActual = vista;
+            document.getElementById('titulo-seccion').textContent = "Agenda: " + agendaEstado.vistasTitulos[vista];
+            ['damas', 'caballeros', 'doctor'].forEach(v => {
+                const tab = document.getElementById(`tab-${v}`);
+                if (v === vista) tab.className = "px-5 py-2 font-bold text-green-800 border-b-4 border-green-600 bg-white rounded-t-lg border-t border-l border-r border-gray-200 uppercase text-xs tracking-wider shadow-sm relative z-10";
+                else tab.className = "px-5 py-2 font-bold text-gray-500 hover:text-green-700 border-b-4 border-transparent uppercase text-xs tracking-wider border-t border-transparent";
+            });
+            renderizarAgenda();
+        }
+
+        function editarStaff() {
+            const st = getStaffActual();
+            const val = prompt(`Edita los colaboradores para la fecha ${agendaEstado.fechaActual}\nSepara con comas:`, st.join(', '));
+            if (val !== null && val.trim() !== "") {
+                if (!agendaEstado.staffPorFecha[agendaEstado.fechaActual]) agendaEstado.staffPorFecha[agendaEstado.fechaActual] = {};
+                agendaEstado.staffPorFecha[agendaEstado.fechaActual][agendaEstado.vistaActual] = val.split(',').map(n => n.trim()).filter(n => n !== "");
+                // GUARDAR EN FIREBASE
+                db.ref('staff').set(agendaEstado.staffPorFecha);
+            }
+        }
+
+        function abrirModalNueva(hora, minuto, staffIndex) {
+            document.getElementById('modal-titulo').textContent = "Agendar Nueva Cita";
+            document.getElementById('cita-id').value = ""; document.getElementById('cita-hora').value = hora;
+            document.getElementById('cita-minuto').value = minuto; document.getElementById('cita-staffIndex').value = staffIndex;
+            document.getElementById('cita-nombre').value = ""; document.getElementById('cita-telefono').value = "";
+            document.getElementById('cita-servicio').value = ""; document.getElementById('cita-duracion').value = "60";
+            document.getElementById('cita-observaciones').value = ""; 
+            
+            document.getElementById('btn-eliminar').classList.add('hidden');
+            document.getElementById('btn-bridge').classList.add('hidden');
+            document.getElementById('cita-modal').classList.remove('hidden');
+            document.getElementById('cita-nombre').focus();
+        }
+
+        function abrirModalEdicion(citaId) {
+            const cita = agendaEstado.citas[citaId];
+            document.getElementById('modal-titulo').textContent = "Modificar Cita";
+            document.getElementById('cita-id').value = cita.id; document.getElementById('cita-hora').value = cita.hora;
+            document.getElementById('cita-minuto').value = cita.minuto; document.getElementById('cita-staffIndex').value = cita.staffIndex;
+            document.getElementById('cita-nombre').value = cita.nombre; document.getElementById('cita-telefono').value = cita.telefono;
+            document.getElementById('cita-servicio').value = cita.servicio; document.getElementById('cita-duracion').value = cita.duracion;
+            document.getElementById('cita-observaciones').value = cita.observaciones || "";
+            
+            document.getElementById('btn-eliminar').classList.remove('hidden');
+            document.getElementById('btn-bridge').classList.remove('hidden');
+            document.getElementById('cita-modal').classList.remove('hidden');
+        }
+
+        function cerrarModal() { document.getElementById('cita-modal').classList.add('hidden'); }
+
+        function guardarCita() {
+            const nombre = document.getElementById('cita-nombre').value.trim();
+            const servicio = document.getElementById('cita-servicio').value.trim();
+            if (!nombre || !servicio) return alert("El nombre y el servicio son obligatorios.");
+            
+            let id = document.getElementById('cita-id').value;
+            let mantenTicket = false;
+            if (!id) { id = 'cita_' + Date.now().toString(36); } 
+            else { mantenTicket = agendaEstado.citas[id].estadoTicket || false; }
+
+            const nuevaCita = {
+                id: id, fecha: agendaEstado.fechaActual, vista: agendaEstado.vistaActual,
+                hora: parseInt(document.getElementById('cita-hora').value),
+                minuto: parseInt(document.getElementById('cita-minuto').value),
+                staffIndex: parseInt(document.getElementById('cita-staffIndex').value),
+                duracion: parseInt(document.getElementById('cita-duracion').value),
+                nombre: nombre, telefono: document.getElementById('cita-telefono').value.trim(), servicio: servicio,
+                observaciones: document.getElementById('cita-observaciones').value.trim(),
+                estadoTicket: mantenTicket
+            };
+
+            // GUARDAR EN FIREBASE
+            db.ref('citas/' + id).set(nuevaCita);
+            cerrarModal(); 
+        }
+
+        function eliminarCita() {
+            if(confirm("¿Cancelar y borrar esta cita?")) {
+                const id = document.getElementById('cita-id').value;
+                // BORRAR DE FIREBASE
+                db.ref('citas/' + id).remove();
+                cerrarModal(); 
+            }
+        }
+
+        function bridgeGenerarTicket() {
+            const id = document.getElementById('cita-id').value;
+            const cita = agendaEstado.citas[id];
+            if(!cita) return;
+
+            // Actualizar estado ticket en Firebase
+            db.ref('citas/' + id + '/estadoTicket').set(true);
+            cerrarModal();
+
+            document.getElementById('inputNombre').value = cita.nombre;
+            const staffActual = getStaffActual();
+            document.getElementById('inputMasajista').value = staffActual[cita.staffIndex] || "";
+            
+            let h = cita.hora > 12 ? cita.hora - 12 : cita.hora;
+            if(h === 0) h = 12;
+            let ampm = cita.hora >= 12 ? 'PM' : 'AM';
+            document.getElementById('inputHora').value = `${h}:${cita.minuto.toString().padStart(2,'0')} ${ampm}`;
+
+            let serv = cita.servicio.toLowerCase();
+            ['Sauna','Masaje','Quiro','Desinto','Colon','Facial','Otro'].forEach(s => {
+                let chk = document.getElementById(`check${s}`);
+                if(chk.checked) { chk.click(); } 
+            });
+
+            if(serv.includes('masaje') || serv.includes('masaj')) {
+                document.getElementById('checkMasaje').click();
+                document.getElementById('inputMasajeTiempo').value = cita.duracion + " Minutos";
+            } else if(serv.includes('sauna')) {
+                document.getElementById('checkSauna').click();
+            } else {
+                document.getElementById('checkOtro').click();
+                const descOtro = cita.observaciones ? `${cita.servicio} (${cita.observaciones})` : cita.servicio;
+                document.getElementById('inputOtroNombre').value = descOtro;
+            }
+
+            showAppView('tickets');
+            actualizarPreview();
+        }
+
+        const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        
+        function establecerFechaYHoraActual() {
+            const ahora = new Date();
+            const horas = String(ahora.getHours()).padStart(2, '0');
+            const minutos = String(ahora.getMinutes()).padStart(2, '0');
+            if(document.getElementById('inputHora').value === "") {
+                document.getElementById('inputHora').value = `${horas}:${minutos}`;
+            }
+        }
+
+        function toggleServicio(servicio) {
+            const activo = document.getElementById(`check${servicio}`).checked;
+            document.getElementById(`tipoPago${servicio}`).disabled = !activo;
+            if (servicio === 'Masaje') document.getElementById('inputMasajeTiempo').disabled = !activo;
+            if (servicio === 'Otro') document.getElementById('inputOtroNombre').disabled = !activo;
+            
+            if (activo) cambiarTipoPago(servicio);
+            else {
+                document.getElementById(`input${servicio}`).disabled = true;
+                document.getElementById(`input${servicio}`).value = '';
+                if (servicio === 'Masaje') document.getElementById('inputMasajeTiempo').value = '';
+                if (servicio === 'Otro') document.getElementById('inputOtroNombre').value = '';
+            }
+            actualizarPreview();
+        }
+
+        function cambiarTipoPago(servicio) {
+            const tipo = document.getElementById(`tipoPago${servicio}`).value;
+            const inputMonto = document.getElementById(`input${servicio}`);
+            if (tipo === 'normal') { inputMonto.disabled = false; inputMonto.placeholder = "Monto"; } 
+            else { inputMonto.disabled = true; inputMonto.value = ''; inputMonto.placeholder = tipo.toUpperCase(); }
+            actualizarPreview();
+        }
+
+        function formatearValorImpresion(servicio) {
+            if (!document.getElementById(`check${servicio}`).checked) return "";
+            const tipo = document.getElementById(`tipoPago${servicio}`).value;
+            const valor = document.getElementById(`input${servicio}`).value;
+            if (tipo === 'prepago') return "PREPAGO";
+            if (tipo === 'cortesia') return "CORTESÍA";
+            return valor ? `Q. ${valor}` : "----";
+        }
+
+        function actualizarPreview() {
+            const f = new Date();
+            document.getElementById('fDia').innerText = String(f.getDate()).padStart(2, '0');
+            document.getElementById('fMes').innerText = MESES[f.getMonth()];
+            document.getElementById('fAnio').innerText = String(f.getFullYear()).slice(-2);
+
+            document.getElementById('lblNombre').innerText = document.getElementById('inputNombre').value;
+            document.getElementById('lblMasajista').innerText = document.getElementById('inputMasajista').value;
+            document.getElementById('lblHora').innerText = document.getElementById('inputHora').value;
+            document.getElementById('lblNumero').innerText = "No. " + String(siguienteNumero).padStart(6, '0');
+
+            ['Sauna', 'Masaje', 'Quiro', 'Desinto', 'Colon', 'Facial', 'Otro'].forEach(s => {
+                document.getElementById(`chk${s}`).innerText = document.getElementById(`check${s}`).checked ? "[✓]" : "[ ]";
+            });
+            const oN = document.getElementById('inputOtroNombre').value;
+            document.getElementById('lblOtroNombre').innerText = oN ? oN + ":" : "Otro:";
+
+            document.getElementById('pSauna').innerText = formatearValorImpresion('Sauna');
+            document.getElementById('pMasaje').innerText = formatearValorImpresion('Masaje');
+            document.getElementById('pMasajeTiempo').innerText = document.getElementById('inputMasajeTiempo').value;
+            document.getElementById('pQuiro').innerText = formatearValorImpresion('Quiro');
+            document.getElementById('pDesinto').innerText = formatearValorImpresion('Desinto');
+            document.getElementById('pColon').innerText = formatearValorImpresion('Colon');
+            document.getElementById('pFacial').innerText = formatearValorImpresion('Facial');
+            document.getElementById('pOtro').innerText = formatearValorImpresion('Otro');
+        }
+
+        function procesarTicket(event) {
+            event.preventDefault();
+            const f = new Date();
+            const checksEstado = {};
+            ['Sauna', 'Masaje', 'Quiro', 'Desinto', 'Colon', 'Facial', 'Otro'].forEach(s => {
+                checksEstado[s] = document.getElementById(`check${s}`).checked;
+            });
+
+            const nuevoTicket = {
+                id: siguienteNumero, anulado: false, fechaIso: f.toISOString(),
+                fechaFormateada: `${f.getDate()} ${MESES[f.getMonth()]} ${f.getFullYear()}`,
+                nombre: document.getElementById('inputNombre').value,
+                masajista: document.getElementById('inputMasajista').value,
+                hora: document.getElementById('inputHora').value,
+                checks: checksEstado, otroServicioNombre: document.getElementById('inputOtroNombre').value,
+                valoresFinales: {
+                    sauna: formatearValorImpresion('Sauna'), masaje: formatearValorImpresion('Masaje'),
+                    masajeTiempo: document.getElementById('inputMasajeTiempo').value, quiro: formatearValorImpresion('Quiro'),
+                    desinto: formatearValorImpresion('Desinto'), colon: formatearValorImpresion('Colon'),
+                    facial: formatearValorImpresion('Facial'), otro: formatearValorImpresion('Otro')
+                }
+            };
+            
+            // GUARDAR EN FIREBASE
+            let ticketsActualizados = [...dbTickets, nuevoTicket];
+            db.ref('tickets').set(ticketsActualizados);
+            db.ref('siguienteNumero').set(siguienteNumero + 1);
+
+            window.print();
+            document.getElementById('ticketForm').reset();
+            ['Sauna', 'Masaje', 'Quiro', 'Desinto', 'Colon', 'Facial', 'Otro'].forEach(s => toggleServicio(s));
+            
+            document.getElementById('inputHora').value = "";
+            establecerFechaYHoraActual();
+        }
+
+        function cambiarFiltro(tipo) {
+            filtroActual = tipo;
+            document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
+            if (tipo === 'hoy') document.getElementById('tabHoy').classList.add('active');
+            if (tipo === 'mes') document.getElementById('tabMes').classList.add('active');
+            if (tipo === 'todos') document.getElementById('tabTodos').classList.add('active');
+            renderHistorial();
+        }
+
+        function renderHistorial() {
+            const tbody = document.getElementById('tablaHistorial');
+            tbody.innerHTML = '';
+            const ahora = new Date();
+            
+            const ticketsFiltrados = dbTickets.filter(t => {
+                if(!t) return false;
+                const fechaT = new Date(t.fechaIso);
+                if (filtroActual === 'hoy') return fechaT.toDateString() === ahora.toDateString();
+                if (filtroActual === 'mes') return fechaT.getMonth() === ahora.getMonth() && fechaT.getFullYear() === ahora.getFullYear();
+                return true;
+            });
+
+            ticketsFiltrados.reverse().forEach(t => {
+                const tr = document.createElement('tr');
+                if (t.anulado) tr.classList.add('row-anulado');
+                const btnAnular = t.anulado ? `<button class="btn-void-sm" disabled style="background:#bbb;">Anulado</button>` : `<button class="btn-void-sm" onclick="anularTicket(${t.id})">Anular</button>`;
+                tr.innerHTML = `<td><b>${String(t.id).padStart(6, '0')}</b></td><td>${t.fechaFormateada}</td><td>${t.anulado ? t.nombre + ' (ANULADO)' : (t.nombre || 'Sin nombre')}</td><td class="actions-cell"><button class="btn-print-sm" onclick="reimprimirTicket(${t.id})">Reimprimir</button>${btnAnular}</td>`;
+                tbody.appendChild(tr);
+            });
+            if (ticketsFiltrados.length === 0) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">No hay tickets registrados.</td></tr>`;
+        }
+
+        function anularTicket(id) {
+            if (confirm(`¿Anular el ticket No. ${String(id).padStart(6, '0')}?`)) {
+                let index = dbTickets.findIndex(t => t.id === id);
+                if(index !== -1) {
+                    // ACTUALIZAR EN FIREBASE
+                    db.ref(`tickets/${index}/anulado`).set(true);
+                }
+            }
+        }
+
+        function reimprimirTicket(id) {
+            const t = dbTickets.find(ticket => ticket && ticket.id === id);
+            if (!t) return;
+            const fechaT = new Date(t.fechaIso);
+            document.getElementById('fDia').innerText = String(fechaT.getDate()).padStart(2, '0');
+            document.getElementById('fMes').innerText = MESES[fechaT.getMonth()];
+            document.getElementById('fAnio').innerText = String(fechaT.getFullYear()).slice(-2);
+
+            document.getElementById('lblNombre').innerText = t.anulado ? t.nombre + " - ANULADO" : t.nombre;
+            document.getElementById('lblMasajista').innerText = t.anulado ? "----" : t.masajista;
+            document.getElementById('lblHora').innerText = t.anulado ? "----" : t.hora;
+            document.getElementById('lblNumero').innerText = "No. " + String(t.id).padStart(6, '0');
+
+            ['Sauna', 'Masaje', 'Quiro', 'Desinto', 'Colon', 'Facial', 'Otro'].forEach(s => {
+                if (t.anulado) document.getElementById(`chk${s}`).innerText = "[ ]";
+                else document.getElementById(`chk${s}`).innerText = (t.checks && t.checks[s]) ? "[✓]" : "[ ]";
+            });
+            document.getElementById('lblOtroNombre').innerText = t.otroServicioNombre ? t.otroServicioNombre + ":" : "Otro:";
+
+            document.getElementById('pSauna').innerText = t.anulado ? "----" : t.valoresFinales.sauna;
+            document.getElementById('pMasaje').innerText = t.anulado ? "----" : t.valoresFinales.masaje;
+            document.getElementById('pMasajeTiempo').innerText = t.anulado ? "" : (t.valoresFinales.masajeTiempo || '');
+            document.getElementById('pQuiro').innerText = t.anulado ? "----" : t.valoresFinales.quiro;
+            document.getElementById('pDesinto').innerText = t.anulado ? "----" : t.valoresFinales.desinto;
+            document.getElementById('pColon').innerText = t.anulado ? "----" : t.valoresFinales.colon;
+            document.getElementById('pFacial').innerText = t.anulado ? "----" : t.valoresFinales.facial;
+            document.getElementById('pOtro').innerText = t.anulado ? "----" : t.valoresFinales.otro;
+
+            window.print();
+            actualizarPreview();
+        }
+
+        function actualizarDashboardStats() {
+            const hoyIso = new Date().toISOString().split('T')[0];
+            const ahora = new Date();
+            
+            let citasHoy = Object.values(agendaEstado.citas).filter(c => c.fecha === hoyIso).length;
+            document.getElementById('dash-citas').innerText = citasHoy;
+
+            let ticketsHoy = dbTickets.filter(t => {
+                if(!t) return false;
+                const ft = new Date(t.fechaIso);
+                return !t.anulado && ft.toDateString() === ahora.toDateString();
+            }).length;
+            document.getElementById('dash-tickets').innerText = ticketsHoy;
+        }
+
+        window.onload = () => {
+            initAgenda();
+            establecerFechaYHoraActual();
+        };
+    </script>
+</body>
+</html>
