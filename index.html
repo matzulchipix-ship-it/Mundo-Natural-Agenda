@@ -326,7 +326,7 @@
             staffPorDefecto: {
                 damas: ["Yuli", "Patty", "Raquel", "Ashley"],
                 caballeros: ["Roberto", "Rafael","Wilson"],
-                consultas : ["Dr. Daniel"]
+                Consultas : ["Dr. Daniel"]
             },
             staffPorFecha: {},
             citas: {}
@@ -460,7 +460,7 @@
         function cambiarTabAgenda(vista) {
             agendaEstado.vistaActual = vista;
             document.getElementById('titulo-seccion').textContent = "Agenda: " + agendaEstado.vistasTitulos[vista];
-            ['damas', 'caballeros', 'doctor'].forEach(v => {
+            ['damas', 'caballeros', 'Consultas'].forEach(v => {
                 const tab = document.getElementById(`tab-${v}`);
                 if (v === vista) tab.className = "px-5 py-2 font-bold text-green-800 border-b-4 border-green-600 bg-white rounded-t-lg border-t border-l border-r border-gray-200 uppercase text-xs tracking-wider shadow-sm relative z-10";
                 else tab.className = "px-5 py-2 font-bold text-gray-500 hover:text-green-700 border-b-4 border-transparent uppercase text-xs tracking-wider border-t border-transparent";
