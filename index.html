@@ -27,16 +27,19 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
 
         /* ================= ESTILOS AGENDA ================= */
-        .sticky-col { position: sticky; left: 0; background-color: #f8fafc; z-index: 10; }
-        .sticky-header { position: sticky; top: 0; background-color: white; z-index: 20; }
-        .sticky-corner { position: sticky; top: 0; left: 0; background-color: #f1f5f9; z-index: 30; }
+        .sticky-col { position: sticky; left: 0; background-color: #f8fafc; z-index: 20; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
+        .sticky-header { position: sticky; top: 0; background-color: white; z-index: 30; }
+        .sticky-corner { position: sticky; top: 0; left: 0; background-color: #f1f5f9; z-index: 40; }
         .agenda-grid { display: grid; grid-auto-rows: 60px; }
 
         /* ================= ESTILOS TICKETS ================= */
-        .admin-panel { width: 55%; padding: 20px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; border-right: 2px solid var(--border); }
-        .preview-panel { width: 45%; background: #e0e0e0; display: flex; justify-content: center; align-items: flex-start; padding: 20px; overflow-y: auto; }
+        .admin-panel { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .preview-panel { background: #e0e0e0; display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
         .ticket-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
         .form-group { display: flex; flex-direction: column; gap: 5px; }
         .form-group.full-width { grid-column: span 2; }
         .form-row-inline { display: flex; gap: 10px; align-items: center; }
@@ -96,12 +99,12 @@
 </head>
 <body>
 
-    <nav class="bg-green-800 text-white p-4 shadow-md flex justify-between items-center shrink-0">
+    <nav class="bg-green-800 text-white p-4 shadow-md flex flex-col md:flex-row justify-between items-center shrink-0 gap-4 md:gap-0 text-center">
         <h1 class="text-xl font-bold tracking-wide">Mundo Natural - Administración</h1>
-        <div class="flex gap-2">
-            <button onclick="showAppView('dashboard')" class="px-4 py-2 hover:bg-green-700 rounded font-semibold transition-colors text-sm uppercase">Dashboard</button>
-            <button onclick="showAppView('agenda')" class="px-4 py-2 hover:bg-green-700 rounded font-semibold transition-colors text-sm uppercase">Agenda</button>
-            <button onclick="showAppView('tickets')" class="px-4 py-2 hover:bg-green-700 rounded font-semibold transition-colors text-sm uppercase">Tickets</button>
+        <div class="flex flex-wrap justify-center gap-2">
+            <button onclick="showAppView('dashboard')" class="px-3 py-2 md:px-4 md:py-2 hover:bg-green-700 rounded font-semibold transition-colors text-xs md:text-sm uppercase">Dashboard</button>
+            <button onclick="showAppView('agenda')" class="px-3 py-2 md:px-4 md:py-2 hover:bg-green-700 rounded font-semibold transition-colors text-xs md:text-sm uppercase">Agenda</button>
+            <button onclick="showAppView('tickets')" class="px-3 py-2 md:px-4 md:py-2 hover:bg-green-700 rounded font-semibold transition-colors text-xs md:text-sm uppercase">Tickets</button>
         </div>
     </nav>
 
@@ -135,27 +138,27 @@
 
         <section id="view-agenda" class="view-section bg-gray-100">
             <header class="bg-white shadow-md border-b-2 border-gray-300 shrink-0 relative z-40">
-                <div class="p-4 flex justify-between items-center pb-0">
+                <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center pb-0 gap-2">
                     <div>
-                        <div class="mt-2 mb-2 flex items-center gap-3 bg-green-50 p-2 rounded-lg border border-green-200 inline-flex">
-                            <label class="text-sm text-green-800 font-bold uppercase tracking-tight">Fecha de Agenda:</label>
-                            <input type="date" id="selector-fecha" onchange="cambiarFecha()" class="border-2 border-green-300 rounded-md px-3 py-1 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white shadow-sm">
+                        <div class="mt-2 mb-2 flex items-center gap-3 bg-green-50 p-2 rounded-lg border border-green-200 inline-flex w-full sm:w-auto">
+                            <label class="text-xs sm:text-sm text-green-800 font-bold uppercase tracking-tight">Fecha:</label>
+                            <input type="date" id="selector-fecha" onchange="cambiarFecha()" class="border-2 border-green-300 rounded-md px-2 py-1 sm:px-3 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white shadow-sm flex-grow">
                         </div>
                     </div>
                 </div>
-                <div class="flex px-4 gap-2 border-t pt-2 bg-gray-50">
+                <div class="flex px-4 gap-2 border-t pt-2 bg-gray-50 overflow-x-auto whitespace-nowrap">
                     <button onclick="cambiarTabAgenda('damas')" id="tab-damas" class="px-5 py-2 font-bold text-green-800 border-b-4 border-green-600 bg-white rounded-t-lg border-t border-l border-r border-gray-200 uppercase text-xs tracking-wider">Área Damas</button>
                     <button onclick="cambiarTabAgenda('caballeros')" id="tab-caballeros" class="px-5 py-2 font-bold text-gray-500 hover:text-green-700 border-b-4 border-transparent uppercase text-xs tracking-wider">Área Caballeros</button>
                     <button onclick="cambiarTabAgenda('Consultas')" id="tab-Consultas" class="px-5 py-2 font-bold text-gray-500 hover:text-green-700 border-b-4 border-transparent uppercase text-xs tracking-wider">Consultas</button>
                 </div>
             </header>
 
-            <div class="bg-white px-4 py-3 border-b-2 border-gray-300 shadow-sm flex justify-between items-center shrink-0 relative z-30">
-                <div class="flex items-center gap-3">
-                    <h2 id="titulo-seccion" class="font-bold text-xl text-gray-800 tracking-tight">Agenda: Área Damas</h2>
+            <div class="bg-white px-4 py-3 border-b-2 border-gray-300 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 shrink-0 relative z-30">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                    <h2 id="titulo-seccion" class="font-bold text-lg sm:text-xl text-gray-800 tracking-tight">Agenda: Área Damas</h2>
                     <span id="indicador-personalizado" class="hidden text-xs bg-blue-100 text-blue-800 font-bold px-2 py-1 rounded-full border border-blue-300">Colaboradores personalizados</span>
                 </div>
-                <button onclick="editarStaff()" class="text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md shadow flex items-center gap-2 font-bold transition-colors">
+                <button onclick="editarStaff()" class="text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md shadow flex items-center gap-2 font-bold transition-colors w-full sm:w-auto justify-center">
                     <span>Modificar Colaboradores</span>
                 </button>
             </div>
@@ -170,11 +173,29 @@
                 <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 border-2 border-gray-300">
                     <h3 id="modal-titulo" class="text-xl font-extrabold text-gray-800 mb-4 border-b pb-2">Nueva Cita</h3>
                     <input type="hidden" id="cita-id">
-                    <input type="hidden" id="cita-staffIndex">
-                    <input type="hidden" id="cita-hora">
-                    <input type="hidden" id="cita-minuto">
                     
                     <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-green-50 p-3 rounded-lg border border-green-200">
+                            <div>
+                                <label class="block text-xs font-bold text-green-800 mb-1 uppercase tracking-wider">Fecha</label>
+                                <input type="date" id="cita-fecha" class="w-full border-2 border-green-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-green-500 font-medium bg-white text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-green-800 mb-1 uppercase tracking-wider">Hora</label>
+                                <div class="flex gap-1">
+                                    <select id="cita-hora" class="w-full border-2 border-green-300 rounded-lg px-1 py-1.5 focus:outline-none focus:border-green-500 font-medium bg-white text-sm">
+                                        <option value="7">7:00 AM</option><option value="8">8:00 AM</option><option value="9">9:00 AM</option><option value="10">10:00 AM</option><option value="11">11:00 AM</option><option value="12">12:00 PM</option><option value="13">1:00 PM</option><option value="14">2:00 PM</option><option value="15">3:00 PM</option><option value="16">4:00 PM</option><option value="17">5:00 PM</option><option value="18">6:00 PM</option>
+                                    </select>
+                                    <select id="cita-minuto" class="w-full border-2 border-green-300 rounded-lg px-1 py-1.5 focus:outline-none focus:border-green-500 font-medium bg-white text-sm">
+                                        <option value="0">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-green-800 mb-1 uppercase tracking-wider">Colaborador</label>
+                                <select id="cita-staffIndex" class="w-full border-2 border-green-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-green-500 font-medium bg-white text-sm"></select>
+                            </div>
+                        </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Nombre del Cliente</label>
                             <input type="text" id="cita-nombre" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 font-medium text-sm" placeholder="Nombre completo">
@@ -221,8 +242,8 @@
             </div>
         </section>
 
-        <section id="view-tickets" class="view-section flex-row">
-            <div class="admin-panel h-full bg-white">
+        <section id="view-tickets" class="view-section flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+            <div class="admin-panel w-full lg:w-[55%] h-auto lg:h-full lg:overflow-y-auto border-b-2 lg:border-b-0 lg:border-r-2 border-gray-200 bg-white">
                 <div class="ticket-card border border-gray-200">
                     <h2 class="text-xl font-bold text-green-800 mb-4 border-b-2 border-green-700 pb-2 tracking-tight">Generar Nuevo Ticket</h2>
                     <form id="ticketForm" onsubmit="procesarTicket(event)">
@@ -264,7 +285,7 @@
                 </div>
             </div>
 
-            <div class="preview-panel h-full">
+            <div class="preview-panel w-full lg:w-[45%] h-auto lg:h-full lg:overflow-y-auto">
                 <div class="ticket-container" id="ticketPrintable">
                     <div class="ticket-header">
                         <div class="ticket-title">MUNDO NATURAL</div>
@@ -398,8 +419,8 @@
                 for(let i = 0; i < bloquesDuracion; i++) slotsOcupados[`${cita.staffIndex}-${startRow + i}`] = true;
             });
 
-            let html = `<div class="sticky-header shadow-md border-b-4 border-gray-400 z-20 bg-gray-100" style="display: grid; ${estiloColumnas}">
-                <div class="p-3 text-center font-extrabold text-gray-800 border-r-2 border-gray-400 sticky-corner bg-gray-200 uppercase tracking-wide text-xs">Hora</div>`;
+            let html = `<div class="sticky-header shadow-md border-b-4 border-gray-400 z-30 bg-gray-100" style="display: grid; ${estiloColumnas}">
+                <div class="p-3 text-center font-extrabold text-gray-800 border-r-2 border-gray-400 sticky-corner bg-gray-200 uppercase tracking-wide text-xs z-40 relative">Hora</div>`;
             staffActual.forEach(nombre => html += `<div class="p-3 text-center font-extrabold text-green-900 border-r-2 border-gray-400 bg-green-100 uppercase tracking-wide text-xs">${nombre}</div>`);
             html += `</div><div class="agenda-grid relative bg-white z-0" style="${estiloColumnas}">`;
 
@@ -479,10 +500,29 @@
             }
         }
 
+        function cargarOpcionesStaff() {
+            const select = document.getElementById('cita-staffIndex');
+            select.innerHTML = '';
+            const staffActual = getStaffActual();
+            staffActual.forEach((nombre, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.textContent = nombre;
+                select.appendChild(opt);
+            });
+        }
+
         function abrirModalNueva(hora, minuto, staffIndex) {
             document.getElementById('modal-titulo').textContent = "Agendar Nueva Cita";
-            document.getElementById('cita-id').value = ""; document.getElementById('cita-hora').value = hora;
-            document.getElementById('cita-minuto').value = minuto; document.getElementById('cita-staffIndex').value = staffIndex;
+            document.getElementById('cita-id').value = ""; 
+            
+            document.getElementById('cita-fecha').value = agendaEstado.fechaActual;
+            cargarOpcionesStaff();
+
+            document.getElementById('cita-hora').value = hora;
+            document.getElementById('cita-minuto').value = minuto; 
+            document.getElementById('cita-staffIndex').value = staffIndex;
+            
             document.getElementById('cita-nombre').value = ""; document.getElementById('cita-telefono').value = "";
             document.getElementById('cita-servicio').value = ""; document.getElementById('cita-duracion').value = "60";
             document.getElementById('cita-observaciones').value = ""; 
@@ -496,8 +536,15 @@
         function abrirModalEdicion(citaId) {
             const cita = agendaEstado.citas[citaId];
             document.getElementById('modal-titulo').textContent = "Modificar Cita";
-            document.getElementById('cita-id').value = cita.id; document.getElementById('cita-hora').value = cita.hora;
-            document.getElementById('cita-minuto').value = cita.minuto; document.getElementById('cita-staffIndex').value = cita.staffIndex;
+            document.getElementById('cita-id').value = cita.id; 
+            
+            document.getElementById('cita-fecha').value = cita.fecha;
+            cargarOpcionesStaff();
+
+            document.getElementById('cita-hora').value = cita.hora;
+            document.getElementById('cita-minuto').value = cita.minuto; 
+            document.getElementById('cita-staffIndex').value = cita.staffIndex;
+            
             document.getElementById('cita-nombre').value = cita.nombre; document.getElementById('cita-telefono').value = cita.telefono;
             document.getElementById('cita-servicio').value = cita.servicio; document.getElementById('cita-duracion').value = cita.duracion;
             document.getElementById('cita-observaciones').value = cita.observaciones || "";
@@ -520,7 +567,9 @@
             else { mantenTicket = agendaEstado.citas[id].estadoTicket || false; }
 
             const nuevaCita = {
-                id: id, fecha: agendaEstado.fechaActual, vista: agendaEstado.vistaActual,
+                id: id, 
+                fecha: document.getElementById('cita-fecha').value, 
+                vista: agendaEstado.vistaActual,
                 hora: parseInt(document.getElementById('cita-hora').value),
                 minuto: parseInt(document.getElementById('cita-minuto').value),
                 staffIndex: parseInt(document.getElementById('cita-staffIndex').value),
