@@ -460,17 +460,17 @@
                     textColor = agendaEstado.vistaActual === 'damas' ? 'text-pink-900' : agendaEstado.vistaActual === 'caballeros' ? 'text-blue-900' : 'text-green-900';
                 }
 
-                const obsTexto = cita.observaciones ? `<p class="text-[10px] font-medium ${textColor} italic opacity-90 truncate mt-0.5">Obs: ${cita.observaciones}</p>` : '';
+                const obsTexto = cita.observaciones ? `<p class="text-[10px] font-medium ${textColor} italic opacity-90 whitespace-normal break-words line-clamp-3 mt-0.5">Obs: ${cita.observaciones}</p>` : '';
 
-                html += `<div class="p-1 z-10" style="grid-column: ${cita.staffIndex + 2}; grid-row: ${startRow} / span ${bloquesDuracion};">
+                html += `<div class="p-1 z-10 min-w-0 w-full" style="grid-column: ${cita.staffIndex + 2}; grid-row: ${startRow} / span ${bloquesDuracion};">
                     <div onclick="abrirModalEdicion('${cita.id}')" class="w-full h-full border-2 rounded-md p-2 shadow-md ${bgColor} cursor-pointer hover:shadow-lg flex flex-col overflow-hidden transition-all">
-                        <div class="bg-white bg-opacity-60 rounded px-1 py-0.5 mb-1 inline-block w-max border border-gray-200">
-                            <span class="text-[10px] font-black ${textColor} uppercase tracking-tight flex items-center gap-1">${nombreStaff}</span>
+                        <div class="bg-white bg-opacity-60 rounded px-1 py-0.5 mb-1 inline-block w-max border border-gray-200 max-w-full overflow-hidden">
+                            <span class="text-[10px] font-black ${textColor} uppercase tracking-tight flex items-center gap-1 truncate">${nombreStaff}</span>
                         </div>
                         <p class="text-sm font-black ${textColor} leading-tight truncate">${cita.nombre}</p>
                         <p class="text-xs ${textColor} font-bold leading-tight mt-0.5 truncate">${cita.duracion} min | ${cita.servicio}</p>
                         ${obsTexto}
-                        ${cita.telefono ? `<p class="text-[10px] ${textColor} font-semibold mt-auto opacity-80">Tel: ${cita.telefono}</p>` : ''}
+                        ${cita.telefono ? `<p class="text-[10px] ${textColor} font-semibold mt-auto opacity-80 truncate">Tel: ${cita.telefono}</p>` : ''}
                     </div></div>`;
             });
             html += `</div>`;
