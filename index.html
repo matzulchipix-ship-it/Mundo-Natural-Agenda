@@ -460,11 +460,11 @@
                     textColor = agendaEstado.vistaActual === 'damas' ? 'text-pink-900' : agendaEstado.vistaActual === 'caballeros' ? 'text-blue-900' : 'text-green-900';
                 }
 
-                const obsTexto = cita.observaciones ? `<p class="text-[10px] font-medium ${textColor} italic opacity-90 whitespace-normal break-words line-clamp-3 mt-0.5">Obs: ${cita.observaciones}</p>` : '';
+                const obsTexto = cita.observaciones ? `<p class="text-[10px] font-medium ${textColor} italic opacity-90 mt-0.5" style="white-space: normal; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">Obs: ${cita.observaciones}</p>` : '';
 
-                html += `<div class="p-1 z-10 min-w-0 w-full" style="grid-column: ${cita.staffIndex + 2}; grid-row: ${startRow} / span ${bloquesDuracion};">
-                    <div onclick="abrirModalEdicion('${cita.id}')" class="w-full h-full border-2 rounded-md p-2 shadow-md ${bgColor} cursor-pointer hover:shadow-lg flex flex-col overflow-hidden transition-all">
-                        <div class="bg-white bg-opacity-60 rounded px-1 py-0.5 mb-1 inline-block w-max border border-gray-200 max-w-full overflow-hidden">
+                html += `<div class="p-1 z-10" style="grid-column: ${cita.staffIndex + 2}; grid-row: ${startRow} / span ${bloquesDuracion}; min-width: 0; max-width: 100%;">
+                    <div onclick="abrirModalEdicion('${cita.id}')" class="w-full h-full border-2 rounded-md p-2 shadow-md ${bgColor} cursor-pointer hover:shadow-lg flex flex-col transition-all" style="min-width: 0; max-width: 100%; overflow: hidden;">
+                        <div class="bg-white bg-opacity-60 rounded px-1 py-0.5 mb-1 inline-block border border-gray-200" style="width: max-content; max-width: 100%; overflow: hidden;">
                             <span class="text-[10px] font-black ${textColor} uppercase tracking-tight flex items-center gap-1 truncate">${nombreStaff}</span>
                         </div>
                         <p class="text-sm font-black ${textColor} leading-tight truncate">${cita.nombre}</p>
